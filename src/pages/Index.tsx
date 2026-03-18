@@ -3,8 +3,9 @@ import Icon from "@/components/ui/icon";
 
 type IName = Parameters<typeof Icon>[0]["name"];
 
-const BEFORE_IMG = "https://cdn.poehali.dev/projects/1df29b27-a1c9-47bc-b05e-9a481148df7d/files/7bfc0cba-3215-4dc5-9156-6a7c281b4054.jpg";
-const AFTER_IMG = "https://cdn.poehali.dev/projects/1df29b27-a1c9-47bc-b05e-9a481148df7d/files/1df101ee-4a39-4c34-a152-058f2eba74a5.jpg";
+const BEFORE_IMG = "https://cdn.poehali.dev/projects/1df29b27-a1c9-47bc-b05e-9a481148df7d/files/36ff76fb-6d35-44c7-a8e5-48fcf7684744.jpg";
+const AFTER_IMG = "https://cdn.poehali.dev/projects/1df29b27-a1c9-47bc-b05e-9a481148df7d/files/36ff76fb-6d35-44c7-a8e5-48fcf7684744.jpg";
+const HERO_IMG = "https://cdn.poehali.dev/projects/1df29b27-a1c9-47bc-b05e-9a481148df7d/files/d59a6d90-ba66-48cb-a962-45013e596cb3.jpg";
 const PROCESS_IMG = "https://cdn.poehali.dev/projects/1df29b27-a1c9-47bc-b05e-9a481148df7d/files/d51d7e18-0997-49d7-a02d-9b27473cd0bb.jpg";
 
 // ─── Before/After Slider ─────────────────────────────────────────────────────
@@ -168,8 +169,8 @@ export default function Index() {
       {/* ── HERO ───────────────────────────────────────── */}
       <section className="relative min-h-[92vh] flex items-center noise-overlay overflow-hidden" style={{ background: "var(--navy)" }}>
         <div className="absolute inset-0">
-          <img src={AFTER_IMG} alt="" className="w-full h-full object-cover opacity-20" />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(26,39,68,0.97) 0%, rgba(26,39,68,0.82) 60%, rgba(26,39,68,0.6) 100%)" }} />
+          <img src={HERO_IMG} alt="Кухня после обновления фасадов" className="w-full h-full object-cover opacity-35" style={{ objectPosition: "center center" }} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(26,39,68,0.92) 0%, rgba(26,39,68,0.75) 55%, rgba(26,39,68,0.45) 100%)" }} />
         </div>
         <div className="absolute right-0 top-0 w-1/2 h-full opacity-5">
           <div className="absolute top-16 right-20 w-64 h-64 border border-white rotate-12" />

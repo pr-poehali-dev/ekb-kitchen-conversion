@@ -11,54 +11,75 @@ const PROCESS_IMG = "https://cdn.poehali.dev/projects/1df29b27-a1c9-47bc-b05e-9a
 // ─── Before/After Slider ─────────────────────────────────────────────────────
 function BeforeAfterSlider() {
   const [pos, setPos] = useState(50);
-  const [dragging, setDragging] = useState(false);
+  const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const update = useCallback((clientX: number) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
+    const pct = Math.max(2, Math.min(98, ((clientX - rect.left) / rect.width) * 100));
     setPos(pct);
   }, []);
 
-  const onMouseMove = useCallback((e: MouseEvent) => { if (dragging) update(e.clientX); }, [dragging, update]);
-  const onTouchMove = useCallback((e: TouchEvent) => { if (dragging) update(e.touches[0].clientX); }, [dragging, update]);
-  const stop = useCallback(() => setDragging(false), []);
-
   useEffect(() => {
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", stop);
-    window.addEventListener("touchmove", onTouchMove);
-    window.addEventListener("touchend", stop);
+    const onMove = (e: MouseEvent) => { if (dragging.current) update(e.clientX); };
+    const onTouch = (e: TouchEvent) => { if (dragging.current) { e.preventDefault(); update(e.touches[0].clientX); } };
+    const onUp = () => { dragging.current = false; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("touchmove", onTouch, { passive: false });
+    window.addEventListener("touchend", onUp);
     return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", stop);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", stop);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onTouch);
+      window.removeEventListener("touchend", onUp);
     };
-  }, [onMouseMove, onTouchMove, stop]);
+  }, [update]);
 
   return (
     <div
       ref={containerRef}
-      className="before-after-container w-full rounded-sm overflow-hidden select-none"
-      style={{ aspectRatio: "16/9", cursor: "ew-resize" }}
-      onMouseDown={(e) => { setDragging(true); update(e.clientX); }}
-      onTouchStart={(e) => { setDragging(true); update(e.touches[0].clientX); }}
+      className="before-after-container w-full rounded-sm select-none"
+      style={{ aspectRatio: "16/9", cursor: "ew-resize", position: "relative", overflow: "hidden" }}
+      onMouseDown={(e) => { dragging.current = true; update(e.clientX); }}
+      onTouchStart={(e) => { dragging.current = true; update(e.touches[0].clientX); }}
     >
-      <img src={AFTER_IMG} alt="После" className="absolute inset-0 w-full h-full object-cover" draggable={false} />
-      <div className="absolute inset-0 overflow-hidden" style={{ width: `${pos}%` }}>
-        <img src={BEFORE_IMG} alt="До" className="w-full h-full object-cover" style={{ width: `${10000 / pos}%`, maxWidth: "none" }} draggable={false} />
-      </div>
-      <div className="absolute top-4 left-4 bg-black/60 text-white text-xs font-semibold px-3 py-1 rounded-sm tracking-widest uppercase">До</div>
-      <div className="absolute top-4 right-4 bg-white/90 text-[#1a2744] text-xs font-semibold px-3 py-1 rounded-sm tracking-widest uppercase">После</div>
-      <div className="before-after-slider" style={{ left: `${pos}%` }}>
-        <div className="before-after-handle">
-          <div className="flex gap-1">
-            <Icon name="ChevronLeft" size={14} className="text-[#1a2744]" />
-            <Icon name="ChevronRight" size={14} className="text-[#1a2744]" />
-          </div>
-        </div>
+      {/* AFTER — полная правая часть (старое состояние справа) */}
+      <img
+        src={AFTER_IMG}
+        alt="После"
+        draggable={false}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", userSelect: "none", pointerEvents: "none" }}
+      />
+      {/* BEFORE — левая часть, обрезается через clipPath */}
+      <img
+        src={BEFORE_IMG}
+        alt="До"
+        draggable={false}
+        style={{
+          position: "absolute", inset: 0, width: "100%", height: "100%",
+          objectFit: "cover", userSelect: "none", pointerEvents: "none",
+          clipPath: `inset(0 ${100 - pos}% 0 0)`,
+        }}
+      />
+      {/* Метки */}
+      <div style={{ position: "absolute", top: 16, left: 16, background: "rgba(0,0,0,0.6)", color: "white", fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 2, letterSpacing: "0.15em", textTransform: "uppercase" }}>До</div>
+      <div style={{ position: "absolute", top: 16, right: 16, background: "rgba(255,255,255,0.92)", color: "#1a2744", fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 2, letterSpacing: "0.15em", textTransform: "uppercase" }}>После</div>
+      {/* Линия-разделитель */}
+      <div style={{ position: "absolute", top: 0, bottom: 0, left: `${pos}%`, width: 3, background: "white", transform: "translateX(-50%)", zIndex: 10, pointerEvents: "none" }} />
+      {/* Круглая ручка */}
+      <div
+        style={{
+          position: "absolute", top: "50%", left: `${pos}%`,
+          transform: "translate(-50%, -50%)",
+          width: 44, height: 44, background: "white", borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.3)", zIndex: 11, cursor: "ew-resize",
+        }}
+      >
+        <Icon name="ChevronLeft" size={13} className="text-[#1a2744]" />
+        <Icon name="ChevronRight" size={13} className="text-[#1a2744]" />
       </div>
     </div>
   );
@@ -168,40 +189,68 @@ export default function Index() {
 
       {/* ── HERO ───────────────────────────────────────── */}
       <section className="relative min-h-[92vh] flex items-center noise-overlay overflow-hidden" style={{ background: "var(--navy)" }}>
-        <div className="absolute inset-0">
-          <img src={HERO_IMG} alt="Кухня после обновления фасадов" className="w-full h-full object-cover opacity-35" style={{ objectPosition: "center center" }} />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(26,39,68,0.92) 0%, rgba(26,39,68,0.75) 55%, rgba(26,39,68,0.45) 100%)" }} />
-        </div>
-        <div className="absolute right-0 top-0 w-1/2 h-full opacity-5">
-          <div className="absolute top-16 right-20 w-64 h-64 border border-white rotate-12" />
-          <div className="absolute top-32 right-40 w-40 h-40 border border-white -rotate-6" />
-          <div className="absolute bottom-32 right-10 w-96 h-96 border border-white rotate-3" />
+        {/* Лёгкий фоновый паттерн */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-16 left-20 w-64 h-64 border border-white rotate-12" />
+          <div className="absolute bottom-32 left-10 w-96 h-96 border border-white rotate-3" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-6 py-20 w-full">
-          <div className="max-w-2xl">
-            <div className="flex items-center gap-3 mb-6 animate-fade-in-up">
-              <span className="gold-line" />
-              <span className="text-xs font-semibold tracking-[0.2em] uppercase text-[#c9962e]">Екатеринбург · Работаем с 2012 года</span>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Левая колонка — текст */}
+            <div>
+              <div className="flex items-center gap-3 mb-6 animate-fade-in-up">
+                <span className="gold-line" />
+                <span className="text-xs font-semibold tracking-[0.2em] uppercase text-[#c9962e]">Екатеринбург · Работаем с 2012 года</span>
+              </div>
+              <h1 className="animate-fade-in-up delay-100" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(2.8rem, 5vw, 4.5rem)", fontWeight: 600, color: "white", lineHeight: 1.1, marginBottom: "1.5rem" }}>
+                Новая кухня —<br />
+                <em style={{ color: "var(--gold-light)", fontStyle: "italic" }}>без замены гарнитура</em>
+              </h1>
+              <p className="text-gray-300 text-lg leading-relaxed mb-10 animate-fade-in-up delay-200">
+                Профессиональное обновление кухонных фасадов: покраска, замена, перетяжка плёнкой. Результат — как из шоурума. Гарантия 3 года.
+              </p>
+              <div className="flex flex-wrap gap-4 animate-fade-in-up delay-300">
+                <a href="#contacts"><button className="btn-gold">Получить расчёт</button></a>
+                <a href="#portfolio"><button className="btn-outline-white">Смотреть работы</button></a>
+              </div>
+              <div className="mt-14 grid grid-cols-3 gap-6 animate-fade-in-up delay-400">
+                {[{ num: "500+", label: "кухонь обновлено" }, { num: "12", label: "лет на рынке" }, { num: "3 года", label: "гарантия" }].map((s) => (
+                  <div key={s.num}>
+                    <div className="stat-number">{s.num}</div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wider mt-1">{s.label}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <h1 className="animate-fade-in-up delay-100" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(2.8rem, 6vw, 5rem)", fontWeight: 600, color: "white", lineHeight: 1.1, marginBottom: "1.5rem" }}>
-              Новая кухня —<br />
-              <em style={{ color: "var(--gold-light)", fontStyle: "italic" }}>без замены гарнитура</em>
-            </h1>
-            <p className="text-gray-300 text-lg leading-relaxed mb-10 animate-fade-in-up delay-200" style={{ maxWidth: "520px" }}>
-              Профессиональное обновление кухонных фасадов: покраска, замена, перетяжка плёнкой. Результат — как из шоурума. Гарантия 3 года.
-            </p>
-            <div className="flex flex-wrap gap-4 animate-fade-in-up delay-300">
-              <a href="#contacts"><button className="btn-gold">Получить расчёт</button></a>
-              <a href="#portfolio"><button className="btn-outline-white">Смотреть работы</button></a>
-            </div>
-            <div className="mt-16 grid grid-cols-3 gap-6 max-w-lg animate-fade-in-up delay-400">
-              {[{ num: "500+", label: "кухонь обновлено" }, { num: "12", label: "лет на рынке" }, { num: "3 года", label: "гарантия" }].map((s) => (
-                <div key={s.num}>
-                  <div className="stat-number">{s.num}</div>
-                  <div className="text-xs text-gray-400 uppercase tracking-wider mt-1">{s.label}</div>
+
+            {/* Правая колонка — картинка с размытием краёв */}
+            <div className="hidden lg:block relative animate-fade-in delay-300">
+              <div className="relative rounded-sm overflow-hidden" style={{ height: "560px" }}>
+                <img
+                  src={HERO_IMG}
+                  alt="Кухня после обновления фасадов"
+                  className="w-full h-full object-cover"
+                  style={{ filter: "brightness(0.85)" }}
+                  draggable={false}
+                />
+                {/* Размытие слева (переход к фону) */}
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to right, var(--navy) 0%, transparent 30%, transparent 85%, rgba(26,39,68,0.4) 100%)" }} />
+                {/* Размытие снизу */}
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to top, var(--navy) 0%, transparent 25%)" }} />
+                {/* Золотая рамка-акцент */}
+                <div className="absolute bottom-6 left-6 right-6 p-4 rounded-sm border border-white/10" style={{ background: "rgba(26,39,68,0.7)", backdropFilter: "blur(8px)" }}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "var(--gold)" }}>
+                      <Icon name="Star" size={14} className="text-white" />
+                    </div>
+                    <div>
+                      <div className="text-white text-sm font-semibold">Результат за 3–5 дней</div>
+                      <div className="text-gray-400 text-xs">Кухня в панельном доме · Екатеринбург</div>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </div>
